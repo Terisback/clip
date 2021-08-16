@@ -1,8 +1,19 @@
 module clip
 
+import v.vmod
+
 fn test_new() {
-	app := new("Clap CLI")
-	assert app.name == "Clap CLI"
+	app := new('Clap CLI')
+	assert app.name == 'Clap CLI'
+}
+
+fn test_vmod() {
+	app := new('Clap CLI').vmod()
+	mod := vmod.decode(@VMOD_FILE) or { panic(err.msg) }
+	assert app.name == mod.name
+	assert app.version == mod.version
+	assert app.author == mod.author
+	assert app.about == mod.description
 }
 
 fn test_app_constructor() {
