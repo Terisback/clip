@@ -1,5 +1,10 @@
 module clip
 
+fn test_new() {
+	app := new("Clap CLI")
+	assert app.name == "Clap CLI"
+}
+
 fn test_app_constructor() {
 	println(App{
 		name: 'coolap'
