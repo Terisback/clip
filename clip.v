@@ -238,7 +238,7 @@ fn colorize(colorized bool, cfn fn (string) string, text string) string {
 }
 
 fn append<T>(a []T, b ...T) []T {
-	mut m := []T{len: a.len + b.len}
+	mut m := []T{cap: a.len + b.len}
 
 	for elem in a {
 		m << elem
