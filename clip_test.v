@@ -2,19 +2,18 @@ module clip
 
 fn test_app_constructor() {
 	println(App{
-		name: 'Some cool app name'
-		bin_name: 'cool_app_name'
+		name: 'coolap'
 		version: '1.0.0'
-		header: 'Description of the app'
-		author: "It's me Mario!"
-		args: [
-			Arg{
+		about: 'Description of the app'
+		author: 'Mario Pipelover <mpipelover@example.com>'
+		options: [
+			Opt{
 				required: true
 				name: 'verbose'
-				short_name: 'v'
+				short: 'v'
 				help: 'Choose verbosity level: 0, 1, 2'
 			},
-			Arg{
+			Opt{
 				required: true
 				name: 'target'
 				help: 'Choose build target'
@@ -23,30 +22,30 @@ fn test_app_constructor() {
 		flags: [
 			Flag{
 				name: 'help'
-				short_name: 'h'
+				short: 'h'
 				help: 'Show this message'
 			},
 			Flag{
 				name: 'version'
-				short_name: 'V'
+				short: 'V'
 				help: 'Prints version information'
 			},
 		]
 		subcommands: [
 			Subcommand{
-				header: 'Additional info about subcommand'
+				about: 'Additional info about subcommand'
 				version: '0.1.0'
 				name: 'build'
-				short_name: 'b'
+				short: 'b'
 				flags: [
 					Flag{
 						name: 'help'
-						short_name: 'h'
+						short: 'h'
 						help: 'Show this message'
 					},
 					Flag{
 						name: 'version'
-						short_name: 'V'
+						short: 'V'
 						help: 'Prints version information'
 					},
 				]
