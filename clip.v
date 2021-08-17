@@ -38,6 +38,32 @@ pub fn (app App) vmod() App {
 	}
 }
 
+// Internal method for adding help flag if it doesn't exist
+//
+// Because of bug, function that uses fill operator - `...`
+// should be declared before struct declare
+fn (a App) check_help_flag() App {
+	mut help_flag_exists := false
+	for flag in a.flags {
+		if flag.short == 'h' || flag.name == 'help' {
+			help_flag_exists = true
+		}
+	}
+
+	if !help_flag_exists {
+		return App{
+			...a
+			flags: append([Flag{
+				name: 'help'
+				short: 'h'
+				help: 'Prints this message'
+			}], ...a.flags)
+		}
+	}
+
+	return a
+}
+
 pub struct App {
 pub:
 	name        string       [required]
@@ -65,11 +91,15 @@ pub fn (a App) get_matches_from(args string) ?Matches {
 	return a.parse(args)
 }
 
-pub fn (a App) str() string {
-	return a.help('NO_COLOR' !in os.environ())
+pub fn (a App) help(colorized bool) string {
+	return a.check_help_flag().format(colorized)
 }
 
-pub fn (a App) help(colorized bool) string {
+pub fn (a App) str() string {
+	return a.check_help_flag().format('NO_COLOR' !in os.environ())
+}
+
+fn (a App) format(colorized bool) string {
 	mut bldr := strings.new_builder(256)
 
 	if !isempty(a.name) || !isempty(a.version) {
