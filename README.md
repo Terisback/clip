@@ -8,7 +8,7 @@ CLI Parser inspired by rust [clap](https://clap.rs/)
 import remimimimi.clip
 
 app := App{
-    name: 'My Tremendously Awesome Program`
+    name: 'My Tremendously Awesome Program'
     about: 'Does awesome stuff'
 }
 
