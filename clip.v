@@ -85,10 +85,10 @@ pub:
 }
 
 pub fn (a App) get_matches() ?Matches {
-	return a.get_matches_from(os.args.join(' '))
+	return a.get_matches_from(os.args)
 }
 
-pub fn (a App) get_matches_from(args string) ?Matches {
+pub fn (a App) get_matches_from(args []string) ?Matches {
 	return a.parse(args)
 }
 
@@ -173,6 +173,6 @@ fn (a App) format(colorized bool) string {
 	return bldr.str()
 }
 
-fn (app App) parse(args string) ?Matches {
+fn (app App) parse(args []string) ?Matches {
 	return none
 }
