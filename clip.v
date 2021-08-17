@@ -13,9 +13,20 @@ pub fn new(name string) App {
 	}
 }
 
-// Overrides name, version, author and about with values of v.mod file
+// Creates new cli app with name, version, author and about with values of v.mod file
 //
 // Panics if pseudo variable @VMOD_FILE is not present or incorrect
+pub fn vmod() App {
+	mod := vmod.decode(@VMOD_FILE) or { panic(err.msg) }
+	return App{
+		name: mod.name
+		version: mod.version
+		author: mod.author
+		about: mod.description
+	}
+}
+
+
 pub fn (app App) vmod() App {
 	mod := vmod.decode(@VMOD_FILE) or { panic(err.msg) }
 	return App{
@@ -27,82 +38,13 @@ pub fn (app App) vmod() App {
 	}
 }
 
-pub fn (app App) version(version string) App {
-	return App{
-		...app
-		version: version
-	}
-}
-
-pub fn (app App) author(author string) App {
-	return App{
-		...app
-		author: author
-	}
-}
-
-pub fn (app App) about(about string) App {
-	return App{
-		...app
-		about: about
-	}
-}
-
-pub fn (app App) flag(flag ...Flag) App {
-	return App{
-		...app
-		flags: append(app.flags, ...flag)
-	}
-}
-
-pub fn (app App) option(option ...Opt) App {
-	return App{
-		...app
-		options: append(app.options, ...option)
-	}
-}
-
-pub fn (app App) subcommand(subcommand ...Subcommand) App {
-	return App{
-		...app
-		subcommands: append(app.subcommands, ...subcommand)
-	}
-}
-
-pub fn (app App) footer(footer string) App {
-	return App{
-		...app
-		footer: footer
-	}
-}
-
-pub fn (app App) app_name(app_name string) App {
-	return App{
-		...app
-		app_name: app_name
-	}
-}
-
-pub fn (app App) set_category_colorizer(cfn fn (string) string) App {
-	return App{
-		...app
-		category_colorizer: cfn
-	}
-}
-
-pub fn (app App) set_keyword_colorizer(cfn fn (string) string) App {
-	return App{
-		...app
-		keyword_colorizer: cfn
-	}
-}
-
 pub struct App {
 pub:
 	name        string       [required]
 	version     string
 	author      string
 	about       string
+	usages      []string
 	flags       []Flag
 	options     []Opt
 	subcommands []Subcommand
@@ -119,76 +61,126 @@ pub:
 pub fn (a App) format(colorized bool) string {
 	mut bldr := strings.new_builder(256)
 
-	if a.name.len != 0 || a.version.len != 0 {
+	if isempty(a.name) || isempty(a.version) {
 		bldr.writeln('$a.name $a.version')
 	}
 
-	if a.author.len != 0 {
-		bldr.writeln('$a.author')
+	if isempty(a.author) {
+		bldr.writeln(a.author)
 	}
 
-	if a.about.len != 0 {
-		bldr.writeln('$a.about\n')
+	if isempty(a.about) {
+		bldr.writeln(a.about)
 	}
+
+	bldr.writeln('')
 
 	// vfmt adding dot before constants so it placed there
+	// TODO: When vfmt will be fixed, move this variable to consts
 	help_offset := 2
-	app_name := if a.app_name.len == 0 { os.file_name(os.executable()) } else { a.app_name }
+	indent := '    '
+	app_name := if isempty(a.app_name) { os.file_name(os.executable()) } else { a.app_name }
 
 	bldr.writeln(colorize(colorized, a.category_colorizer, 'Usage:'))
-	bldr.write_string('\t')
-	bldr.writeln('$app_name [FLAGS] [OPTIONS] [SUBCOMMAND]')
-
-	bldr.writeln('')
-	bldr.writeln(colorize(colorized, a.category_colorizer, 'Flags:'))
-
-	mut max_name_len := 0
-	mut max_short_len := 0
-	for flag in a.flags {
-		max_name_len = math.imax(max_name_len, flag.name.len)
-		max_short_len = math.imax(max_short_len, flag.short.len)
-	}
-
-	for flag in a.flags {
-		bldr.write_string('\t')
-		if max_short_len != 0 {
-			if flag.short.len != 0 {
-				bldr.write_string(' '.repeat(max_short_len - flag.short.len))
-				bldr.write_string(colorize(colorized, a.keyword_colorizer, '-$flag.short'))
-				bldr.write_string(', ')
-			} else {
-				bldr.write_string(' '.repeat(max_short_len + 3))
-			}
+	if a.usages.len == 0 {
+		bldr.write_string(indent)
+		bldr.writeln('$app_name [FLAGS] [OPTIONS] [SUBCOMMAND]')
+	} else {
+		for usage in a.usages {
+			bldr.write_string(indent)
+			bldr.write_string(app_name + " ")
+			bldr.writeln(usage)
 		}
-		bldr.write_string(colorize(colorized, a.keyword_colorizer, '--$flag.name'))
-		bldr.write_string(' '.repeat(max_name_len - flag.name.len + help_offset))
-		bldr.writeln('$flag.help')
 	}
 
-	bldr.writeln('')
-	bldr.writeln(colorize(colorized, a.category_colorizer, 'Options:'))
+	if !isempty(a.flags) {
+		bldr.writeln('')
+		bldr.writeln(colorize(colorized, a.category_colorizer, 'Flags:'))
 
-	max_name_len = 0
-	max_short_len = 0
-	for opt in a.options {
-		max_name_len = math.imax(max_name_len, opt.name.len)
-		max_short_len = math.imax(max_short_len, opt.short.len)
-	}
-
-	for opt in a.options {
-		bldr.write_string('\t')
-		if max_short_len != 0 {
-			if opt.short.len != 0 {
-				bldr.write_string(' '.repeat(max_short_len - opt.short.len))
-				bldr.write_string(colorize(colorized, a.keyword_colorizer, '-$opt.short'))
-				bldr.write_string(', ')
-			} else {
-				bldr.write_string(' '.repeat(max_short_len + 3))
-			}
+		mut max_name_len := 0
+		mut max_short_len := 0
+		for flag in a.flags {
+			max_name_len = math.imax(max_name_len, flag.name.len)
+			max_short_len = math.imax(max_short_len, flag.short.len)
 		}
-		bldr.write_string(colorize(colorized, a.keyword_colorizer, '--$opt.name'))
-		bldr.write_string(' '.repeat(max_name_len - opt.name.len + help_offset))
-		bldr.writeln('$opt.help')
+
+		for flag in a.flags {
+			bldr.write_string(indent)
+			if max_short_len != 0 {
+				if !isempty(flag.short) {
+					bldr.write_string(' '.repeat(max_short_len - flag.short.len))
+					bldr.write_string(colorize(colorized, a.keyword_colorizer, '-$flag.short'))
+					bldr.write_string(', ')
+				} else {
+					bldr.write_string(' '.repeat(max_short_len + 3))
+				}
+			}
+			bldr.write_string(colorize(colorized, a.keyword_colorizer, '--$flag.name'))
+			bldr.write_string(' '.repeat(max_name_len - flag.name.len + help_offset))
+			bldr.writeln(flag.help)
+		}
+	}
+
+	if !isempty(a.options) {
+		bldr.writeln('')
+		bldr.writeln(colorize(colorized, a.category_colorizer, 'Options:'))
+
+		mut max_paraname_len := 0
+		mut max_short_len := 0
+		for opt in a.options {
+			max_paraname_len = math.imax(max_paraname_len, opt.name.len + opt.param.len)
+			max_short_len = math.imax(max_short_len, opt.short.len)
+		}
+
+		for opt in a.options {
+			bldr.write_string(indent)
+			if max_short_len != 0  {
+				if !isempty(opt.short) {
+					bldr.write_string(' '.repeat(max_short_len - opt.short.len))
+					bldr.write_string(colorize(colorized, a.keyword_colorizer, '-$opt.short'))
+					bldr.write_string(', ')
+				} else {
+					bldr.write_string(' '.repeat(max_short_len + 3))
+				}
+			}
+			paraname_len := opt.name.len + opt.param.len
+			bldr.write_string(colorize(colorized, a.keyword_colorizer, '--$opt.name <$opt.param>'))
+			bldr.write_string(' '.repeat(max_paraname_len - paraname_len + help_offset))
+			bldr.writeln(opt.help)
+		}
+	}
+
+	if !isempty(a.subcommands) {
+		bldr.writeln('')
+		bldr.writeln(colorize(colorized, a.category_colorizer, 'Subcommands:'))
+
+		mut max_name_len := 0
+		mut max_short_len := 0
+		for subcmd in a.subcommands {
+			max_name_len = math.imax(max_name_len, subcmd.name.len)
+			max_short_len = math.imax(max_short_len, subcmd.short.len)
+		}
+
+		for subcmd in a.subcommands {
+			bldr.write_string(indent)
+			if max_short_len != 0 {
+				if !isempty(subcmd.short) {
+					bldr.write_string(' '.repeat(max_short_len - subcmd.short.len))
+					bldr.write_string(colorize(colorized, a.keyword_colorizer, subcmd.short))
+					bldr.write_string(', ')
+				} else {
+					bldr.write_string(' '.repeat(max_short_len + 2))
+				}
+			}
+			bldr.write_string(colorize(colorized, a.keyword_colorizer, subcmd.name))
+			bldr.write_string(' '.repeat(max_name_len - subcmd.name.len + help_offset))
+			bldr.writeln(subcmd.help)
+		}
+	}
+	
+	if !isempty(a.footer) {
+		bldr.writeln('')
+		bldr.writeln(a.footer)
 	}
 
 	return bldr.str()
@@ -212,6 +204,17 @@ pub:
 	footer      string
 }
 
+pub fn (cmd Subcommand) format(colorized bool) string {
+	mut bldr := strings.new_builder(256)
+
+
+	return bldr.str()
+}
+
+pub fn (cmd Subcommand) str() string {
+	return cmd.format('NO_COLOR' !in os.environ())
+} 
+
 pub struct Flag {
 pub:
 	name          string [required]
@@ -225,6 +228,7 @@ pub struct Opt {
 pub:
 	name     string [required]
 	short    string
+	param    string [required]
 	help     string
 	required bool
 	multiple bool
@@ -249,4 +253,8 @@ fn append<T>(a []T, b ...T) []T {
 	}
 
 	return m
+}
+
+fn isempty<T>(text T) bool {
+	return text.len == 0
 }
