@@ -1,7 +1,7 @@
 module clip
 
-import strings
 import math.util as math
+import strings
 
 pub struct Flag {
 pub:

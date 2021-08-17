@@ -1,6 +1,7 @@
 module clip
 
 import os
+import strings
 import v.vmod
 
 // Creates new App
@@ -65,5 +66,82 @@ pub fn (a App) get_matches_from(args string) ?Matches {
 }
 
 pub fn (a App) str() string {
-	return a.format('NO_COLOR' !in os.environ())
+	return a.help('NO_COLOR' !in os.environ())
+}
+
+pub fn (a App) help(colorized bool) string {
+	mut bldr := strings.new_builder(256)
+
+	if !isempty(a.name) || !isempty(a.version) {
+		bldr.writeln('$a.name $a.version')
+	}
+
+	if !isempty(a.author) {
+		bldr.writeln(a.author)
+	}
+
+	if !isempty(a.about) {
+		bldr.writeln(a.about)
+	}
+
+	bldr.writeln('')
+
+	// vfmt adding dot before constants so it placed there
+	// TODO: When vfmt will be fixed, move this variable to consts
+	help_offset := 2
+	indent := '    '
+	app_name := if isempty(a.app_name) { os.file_name(os.executable()) } else { a.app_name }
+
+	bldr.writeln(colorize(colorized, a.colorizers.category, 'Usage:'))
+	if a.usages.len == 0 {
+		bldr.write_string(indent)
+		bldr.write_string(app_name)
+
+		if !isempty(a.flags) {
+			bldr.write_string(' [FLAGS]')
+		}
+
+		if !isempty(a.options) {
+			bldr.write_string(' [OPTIONS]')
+		}
+
+		if !isempty(a.subcommands) {
+			bldr.write_string(' [SUBCOMMAND]')
+		}
+
+		bldr.writeln(' INPUT...')
+	} else {
+		for usage in a.usages {
+			bldr.write_string(indent)
+			bldr.write_string(app_name)
+			bldr.write_string(' ')
+			bldr.writeln(usage)
+		}
+	}
+
+	if !isempty(a.flags) {
+		bldr.writeln('')
+		a.flags.format(mut bldr, colorized, a.colorizers, indent, help_offset)
+	}
+
+	if !isempty(a.options) {
+		bldr.writeln('')
+		a.options.format(mut bldr, colorized, a.colorizers, indent, help_offset)
+	}
+
+	if !isempty(a.subcommands) {
+		bldr.writeln('')
+		a.subcommands.format(mut bldr, colorized, a.colorizers, indent, help_offset)
+	}
+
+	if !isempty(a.footer) {
+		bldr.writeln('')
+		bldr.writeln(a.footer)
+	}
+
+	return bldr.str()
+}
+
+fn (app App) parse(args string) ?Matches {
+	return none
 }
