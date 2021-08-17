@@ -47,6 +47,7 @@ fn (a App) check_help_flag() App {
 	for flag in a.flags {
 		if flag.short == 'h' || flag.name == 'help' {
 			help_flag_exists = true
+			break
 		}
 	}
 

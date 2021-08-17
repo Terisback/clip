@@ -1,4 +1,4 @@
-module clip 
+module clip
 
 import math.util as math
 import strings
