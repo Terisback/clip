@@ -1,6 +1,6 @@
 Module {
 	name: 'clip'
-	description: 'Builder pattern based cli parser'
+	description: 'CLI Parser inspired by rust clap'
 	version: '0.1.0'
 	license: 'MIT'
 	dependencies: []
