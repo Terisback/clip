@@ -92,9 +92,18 @@ fn test_parse() ? {
 				help: 'Choose verbosity level: 0, 1, 2'
 			}
 		]
+		subcommands: [
+			Subcommand{
+				name: "some"
+			}
+		]
 	}
 
 	m := app.parse(['clip', '-v=4', '--debug', 'some', 'arguemnt']) ?
 
-	// println(m)
+	println(m)
+
+	if m.matched_subcmd != '' {
+		println(m.subcommand)
+	}
 }

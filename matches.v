@@ -5,7 +5,8 @@ mut:
 	argument    string
 	flags       map[string]bool
 	opts        map[string][]string
-	subcommands map[string]Matches
+	matched_subcmd string
+	subcommand 	&Matches = voidptr(0)
 }
 
 pub fn (m Matches) flag(flag_name string) bool {

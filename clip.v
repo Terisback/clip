@@ -174,27 +174,41 @@ fn (a App) format(colorized bool) string {
 }
 
 fn (app App) parse(args []string) ?Matches {
-	mut arguments := args[1..] 
+	// Leave behind a binary or path what usually passed as first argument
+	return parse(app, args[1..])
+}
+
+interface Command {
+	flags []Flag
+	options []Opt
+	subcommands []Subcommand
+}
+
+fn parse(command Command, arguments []string) ?Matches {
 	mut matches := Matches{}
 
-	for flag in app.flags {
+	if is_empty(arguments) {
+		return matches
+	}
+
+	for flag in command.flags {
 		matches.flags[flag.name] = flag.default_value
 	}
 
 	mut required_opts := []string{}
-	for option in app.options {
+	for option in command.options {
 		if option.required {
 			required_opts << option.name
 		}
 	}
 
 	for index, arg in arguments {
-		if app.parse_arg(mut matches, mut required_opts, arg) ? {
+		if parse_arg(command, mut matches, mut required_opts, arg) ? {
 			continue
 		}
 
-		if app.parse_subcommand(mut matches, arg, arguments[index..]) ? {
-			continue
+		if parse_subcommand(command.subcommands, mut matches, arg, arguments[index..]) ? {
+			break
 		}
 
 		matches.argument = arguments[index..].join(' ')
@@ -214,7 +228,7 @@ enum ArgType {
 	long
 }
 
-fn (app App) determine_arg(arg string) ?([]string, ArgType) {
+fn determine_arg(arg string) ?([]string, ArgType) {
 	if arg.starts_with('--') {
 		return arg.trim_prefix('--').split('='), ArgType.long
 	} else if arg.starts_with('-') {
@@ -224,14 +238,14 @@ fn (app App) determine_arg(arg string) ?([]string, ArgType) {
 	return error('')
 }
 
-fn (app App) parse_arg(mut matches Matches, mut required_opts []string, arg string) ?bool {
-	parts, arg_type := app.determine_arg(arg) or {
+fn parse_arg(command Command, mut matches Matches, mut required_opts []string, arg string) ?bool {
+	parts, arg_type := determine_arg(arg) or {
 		return false
 	}
 
 	if (parts.len > 1 
-		&& app.parse_option(mut matches, mut required_opts, parts, arg_type))
-		|| app.parse_flag(mut matches, parts[0], arg_type) {
+		&& parse_option(command.options, mut matches, mut required_opts, parts, arg_type))
+		|| parse_flag(command.flags, mut matches, parts[0], arg_type) {
 		return true
 	}
 
@@ -239,8 +253,8 @@ fn (app App) parse_arg(mut matches Matches, mut required_opts []string, arg stri
 	return error('there is no such argument: `$arg`')
 }
 
-fn (app App) parse_flag(mut matches Matches, arg string, arg_type ArgType) bool {
-	for flag in app.flags {
+fn parse_flag(flags []Flag, mut matches Matches, arg string, arg_type ArgType) bool {
+	for flag in flags {
 		name := match arg_type {
 			.short { flag.short }
 			.long { flag.name }
@@ -255,8 +269,8 @@ fn (app App) parse_flag(mut matches Matches, arg string, arg_type ArgType) bool 
 	return false
 }
 
-fn (app App) parse_option(mut matches Matches, mut required_opts []string, parts []string, arg_type ArgType) bool {
-	for option in app.options {
+fn parse_option(options []Opt, mut matches Matches, mut required_opts []string, parts []string, arg_type ArgType) bool {
+	for option in options {
 		name := match arg_type {
 			.short { option.short }
 			.long { option.name }
@@ -282,6 +296,15 @@ fn (app App) parse_option(mut matches Matches, mut required_opts []string, parts
 	return false
 }
 
-fn (app App) parse_subcommand(mut matches Matches, arg string, rest []string) ?bool {
-	return true
+fn parse_subcommand(subcommands []Subcommand, mut matches Matches, arg string, rest []string) ?bool {
+	for subcmd in subcommands {
+		if arg in [subcmd.name, subcmd.short] {
+			subcmd_matches := parse(&subcmd, rest[1..]) ?
+			matches.matched_subcmd = subcmd.name
+			matches.subcommand = &subcmd_matches
+			return true
+		}
+	}
+
+	return false
 }
