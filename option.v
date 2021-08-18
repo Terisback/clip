@@ -27,7 +27,7 @@ fn (options []Opt) format(mut bldr strings.Builder, colorized bool, colorizers C
 	for opt in options {
 		bldr.write_string(indent)
 		if max_short_len != 0 {
-			if !isempty(opt.short) {
+			if !is_empty(opt.short) {
 				bldr.write_string(' '.repeat(max_short_len - opt.short.len))
 				bldr.write_string(colorize(colorized, colorizers.keyword, '-$opt.short'))
 				bldr.write_string(', ')

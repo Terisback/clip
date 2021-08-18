@@ -39,7 +39,7 @@ fn (subcommands []Subcommand) format(mut bldr strings.Builder, colorized bool, c
 	for subcmd in subcommands {
 		bldr.write_string(indent)
 		if max_short_len != 0 {
-			if !isempty(subcmd.short) {
+			if !is_empty(subcmd.short) {
 				bldr.write_string(' '.repeat(max_short_len - subcmd.short.len))
 				bldr.write_string(colorize(colorized, colorizers.keyword, subcmd.short))
 				bldr.write_string(', ')

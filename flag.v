@@ -24,7 +24,7 @@ fn (flags []Flag) format(mut bldr strings.Builder, colorized bool, colorizers Co
 	for flag in flags {
 		bldr.write_string(indent)
 		if max_short_len != 0 {
-			if !isempty(flag.short) {
+			if !is_empty(flag.short) {
 				bldr.write_string(' '.repeat(max_short_len - flag.short.len))
 				bldr.write_string(colorize(colorized, colorizers.keyword, '-$flag.short'))
 				bldr.write_string(', ')

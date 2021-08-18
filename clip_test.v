@@ -77,6 +77,12 @@ fn test_parse() ? {
 		version: '1.0.0'
 		about: 'Description of the app'
 		author: 'Mario Pipelover <mpipelover@example.com>'
+		flags: [
+			Flag{
+				name:'debug'
+				help:'Enable debug'
+			}
+		]
 		options: [
 			Opt{
 				required: true
@@ -88,7 +94,7 @@ fn test_parse() ? {
 		]
 	}
 
-	m := app.parse(['clip', '-v=4', 'ebal mamku 2', '--verbose', 'some']) ?
+	m := app.parse(['clip', '-v=4', '--debug', 'some', 'arguemnt']) ?
 
-	println(m)
+	// println(m)
 }

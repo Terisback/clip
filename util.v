@@ -26,6 +26,6 @@ fn index_of<T>(array []T, value T) int {
 }
 
 // Checks if obj.len is zero
-fn isempty<T>(obj T) bool {
+fn is_empty<T>(obj T) bool {
 	return obj.len == 0
 }

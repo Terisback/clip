@@ -103,15 +103,15 @@ pub fn (a App) str() string {
 fn (a App) format(colorized bool) string {
 	mut bldr := strings.new_builder(256)
 
-	if !isempty(a.name) || !isempty(a.version) {
+	if !is_empty(a.name) || !is_empty(a.version) {
 		bldr.writeln('$a.name $a.version')
 	}
 
-	if !isempty(a.author) {
+	if !is_empty(a.author) {
 		bldr.writeln(a.author)
 	}
 
-	if !isempty(a.about) {
+	if !is_empty(a.about) {
 		bldr.writeln(a.about)
 	}
 
@@ -121,22 +121,22 @@ fn (a App) format(colorized bool) string {
 	// TODO: When vfmt will be fixed, move this variable to consts
 	help_offset := 2
 	indent := '    '
-	app_name := if isempty(a.app_name) { os.file_name(os.executable()).split('.')[0] } else { a.app_name }
+	app_name := if is_empty(a.app_name) { os.file_name(os.executable()).split('.')[0] } else { a.app_name }
 
 	bldr.writeln(colorize(colorized, a.colorizers.category, 'Usage:'))
 	if a.usages.len == 0 {
 		bldr.write_string(indent)
 		bldr.write_string(app_name)
 
-		if !isempty(a.flags) {
+		if !is_empty(a.flags) {
 			bldr.write_string(' [FLAGS]')
 		}
 
-		if !isempty(a.options) {
+		if !is_empty(a.options) {
 			bldr.write_string(' [OPTIONS]')
 		}
 
-		if !isempty(a.subcommands) {
+		if !is_empty(a.subcommands) {
 			bldr.write_string(' [SUBCOMMAND]')
 		}
 
@@ -150,22 +150,22 @@ fn (a App) format(colorized bool) string {
 		}
 	}
 
-	if !isempty(a.flags) {
+	if !is_empty(a.flags) {
 		bldr.writeln('')
 		a.flags.format(mut bldr, colorized, a.colorizers, indent, help_offset)
 	}
 
-	if !isempty(a.options) {
+	if !is_empty(a.options) {
 		bldr.writeln('')
 		a.options.format(mut bldr, colorized, a.colorizers, indent, help_offset)
 	}
 
-	if !isempty(a.subcommands) {
+	if !is_empty(a.subcommands) {
 		bldr.writeln('')
 		a.subcommands.format(mut bldr, colorized, a.colorizers, indent, help_offset)
 	}
 
-	if !isempty(a.footer) {
+	if !is_empty(a.footer) {
 		bldr.writeln('')
 		bldr.writeln(a.footer)
 	}
@@ -193,18 +193,15 @@ fn (app App) parse(args []string) ?Matches {
 			continue
 		}
 
-		for subcmd in app.subcommands {
-			if arg == subcmd.name && arg == subcmd.short {
-				// Start subcmd parse
-				// continue
-			}
+		if app.parse_subcommand(mut matches, arg, arguments[index..]) ? {
+			continue
 		}
 
 		matches.argument = arguments[index..].join(' ')
 		break
 	}
 
-	if !isempty(required_opts) {
+	if !is_empty(required_opts) {
 		// TODO: Create error type
 		return error('not all required options was provided, expected: `${required_opts.join('`, `')}`')
 	}
@@ -283,4 +280,8 @@ fn (app App) parse_option(mut matches Matches, mut required_opts []string, parts
 	}
 
 	return false
+}
+
+fn (app App) parse_subcommand(mut matches Matches, arg string, rest []string) ?bool {
+	return true
 }
