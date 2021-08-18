@@ -121,7 +121,7 @@ fn (a App) format(colorized bool) string {
 	// TODO: When vfmt will be fixed, move this variable to consts
 	help_offset := 2
 	indent := '    '
-	app_name := if isempty(a.app_name) { os.file_name(os.executable()) } else { a.app_name }
+	app_name := if isempty(a.app_name) { os.file_name(os.executable()).split('.')[0] } else { a.app_name }
 
 	bldr.writeln(colorize(colorized, a.colorizers.category, 'Usage:'))
 	if a.usages.len == 0 {
@@ -174,5 +174,108 @@ fn (a App) format(colorized bool) string {
 }
 
 fn (app App) parse(args []string) ?Matches {
-	return none
+	mut arguments := args[1..] 
+	mut matches := Matches{}
+
+	for flag in app.flags {
+		matches.flags[flag.name] = flag.default_value
+	}
+
+	mut required_opts := []string{}
+	for option in app.options {
+		if option.required {
+			required_opts << option.name
+		}
+	}
+
+	arg_loop: for index, arg in arguments {
+		if arg.starts_with('--') {
+			parts := arg.trim_prefix('--').split('=')
+
+			if parts.len > 1 
+			 	&& app.parse_option(mut matches, mut required_opts, parts, .long) {
+				continue arg_loop
+			}
+
+			if app.parse_flag(mut matches, parts[0], .long) {
+				continue arg_loop
+			}
+		} else if arg.starts_with('-') {
+			parts := arg.trim_prefix('-').split('=')
+
+			if parts.len > 1 
+				&& app.parse_option(mut matches, mut required_opts, parts, .short) {
+				continue arg_loop
+			}
+
+			if app.parse_flag(mut matches, parts[0], .short) {
+				continue arg_loop
+			}
+		}
+
+		for subcmd in app.subcommands {
+			if arg == subcmd.name && arg == subcmd.short {
+				// Start subcmd parse
+				// continue
+			}
+		}
+
+		matches.argument = arguments[index..].join(' ')
+		break
+	}
+
+	if !isempty(required_opts) {
+		// TODO: Create error type
+		return error('not all required options was provided, expected: `${required_opts.join('`, `')}`')
+	}
+
+	return matches
+}
+
+enum ArgType {
+	short
+	long
+}
+
+fn (app App) parse_flag(mut matches Matches, arg string, arg_type ArgType) bool {
+	for flag in app.flags {
+		name := match arg_type {
+			.short { flag.short }
+			.long { flag.name }
+		}
+
+		if arg == name {
+			matches.flags[flag.name] = !flag.default_value
+			return true
+		}
+	}
+
+	return false
+}
+
+fn (app App) parse_option(mut matches Matches, mut required_opts []string, parts []string, arg_type ArgType) bool {
+	for option in app.options {
+		name := match arg_type {
+			.short { option.short }
+			.long { option.name }
+		}
+
+		if parts[0] == name {
+			index := index_of(required_opts, option.name)
+
+			if option.required && index != -1 {
+				required_opts.delete(index)
+			}
+
+			if option.multiple {
+				matches.opts[option.name] = parts[1..].join('=').split(',')
+			} else {
+				matches.opts[option.name] = [parts[1..].join('=')]
+			}
+
+			return true
+		}
+	}
+
+	return false
 }

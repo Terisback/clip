@@ -15,6 +15,16 @@ fn append<T>(a []T, b ...T) []T {
 	return m
 }
 
+fn index_of<T>(array []T, value T) int {
+	for index, elem in array {
+		if elem == value {
+			return index
+		}
+	}
+
+	return -1
+}
+
 // Checks if obj.len is zero
 fn isempty<T>(obj T) bool {
 	return obj.len == 0

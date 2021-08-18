@@ -39,11 +39,6 @@ fn test_app_constructor() {
 		]
 		flags: [
 			Flag{
-				name: 'help'
-				short: 'h'
-				help: 'Show this message'
-			},
-			Flag{
 				name: 'version'
 				short: 'V'
 				help: 'Prints version information'
@@ -73,4 +68,26 @@ fn test_app_constructor() {
 		]
 		footer: 'Some cli app usage examples'
 	})
+}
+
+fn test_parse() ? {
+	app := App{
+		name: 'coolap'
+		version: '1.0.0'
+		about: 'Description of the app'
+		author: 'Mario Pipelover <mpipelover@example.com>'
+		options: [
+			Opt{
+				required: true
+				name: 'verbose'
+				short: 'v'
+				param: 'level'
+				help: 'Choose verbosity level: 0, 1, 2'
+			}
+		]
+	}
+
+	m := app.parse(['clip', '-v=4', 'ebal mamku 2', '--verbose', 'some']) ?
+
+	println(m)
 }
