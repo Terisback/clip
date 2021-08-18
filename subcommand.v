@@ -20,8 +20,42 @@ pub:
 // Prints out help message
 //
 // Should be called only from App
-fn (cmd Subcommand) format(colorized bool) string {
+fn (cmd Subcommand) format(colorizers Colorizers, colorized bool, indent string, help_offset int) string {
 	mut bldr := strings.new_builder(256)
+
+	if !is_empty(cmd.name) || !is_empty(cmd.version) {
+		bldr.writeln('$cmd.name $cmd.version')
+	}
+
+	if !is_empty(cmd.author) {
+		bldr.writeln(cmd.author)
+	}
+
+	if !is_empty(cmd.about) {
+		bldr.writeln(cmd.about)
+	}
+
+	bldr.writeln('')
+
+	if !is_empty(cmd.flags) {
+		bldr.writeln('')
+		cmd.flags.format(mut bldr, colorized, colorizers, indent, help_offset)
+	}
+
+	if !is_empty(cmd.options) {
+		bldr.writeln('')
+		cmd.options.format(mut bldr, colorized, colorizers, indent, help_offset)
+	}
+
+	if !is_empty(cmd.subcommands) {
+		bldr.writeln('')
+		cmd.subcommands.format(mut bldr, colorized, colorizers, indent, help_offset)
+	}
+
+	if !is_empty(cmd.footer) {
+		bldr.writeln('')
+		bldr.writeln(cmd.footer)
+	}
 
 	return bldr.str()
 }
