@@ -14,7 +14,7 @@ pub:
 	multiple bool
 }
 
-fn (options []Opt) format(mut bldr strings.Builder, colorized bool, colorizers Colorizers, indent string, help_offset int) {
+fn (options []Opt) format(mut bldr strings.Builder, colorized bool, colorizers Colorizers) {
 	bldr.writeln(colorize(colorized, colorizers.category, 'Options:'))
 
 	mut max_paraname_len := 0

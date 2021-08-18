@@ -11,7 +11,7 @@ pub:
 	default_value bool
 }
 
-fn (flags []Flag) format(mut bldr strings.Builder, colorized bool, colorizers Colorizers, indent string, help_offset int) {
+fn (flags []Flag) format(mut bldr strings.Builder, colorized bool, colorizers Colorizers) {
 	bldr.writeln(colorize(colorized, colorizers.category, 'Flags:'))
 
 	mut max_name_len := 0

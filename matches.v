@@ -1,12 +1,17 @@
 module clip
 
 pub struct Matches {
+	before string
 mut:
 	argument       string
 	flags          map[string]bool
 	opts           map[string][]string
 	matched_subcmd string
 	subcommand     &Matches = voidptr(0)
+}
+
+fn (m Matches) is_empty() bool {
+	return is_empty(m.argument) && is_empty(m.flags) && is_empty(m.opts) && is_empty(m.matched_subcmd)
 }
 
 pub fn (m Matches) argument() string {

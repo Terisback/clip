@@ -1,9 +1,11 @@
 module clip
 
 import math.util as math
+import os
 import strings
 
 pub struct Subcommand {
+	before string
 pub:
 	name        string       [required]
 	short       string
@@ -11,20 +13,25 @@ pub:
 	version     string
 	author      string
 	about       string
+	usages      []string
 	flags       []Flag
 	options     []Opt
 	subcommands []Subcommand
 	footer      string
 }
 
+fn (cmd Subcommand) print(before string) {
+	println(cmd.format(before, Colorizers{}, 'NO_COLOR' !in os.environ()))
+}
+
 // Prints out help message
 //
 // Should be called only from App
-fn (cmd Subcommand) format(colorizers Colorizers, colorized bool, indent string, help_offset int) string {
+fn (cmd Subcommand) format(before string, colorizers Colorizers, colorized bool) string {
 	mut bldr := strings.new_builder(256)
 
 	if !is_empty(cmd.name) || !is_empty(cmd.version) {
-		bldr.writeln('$cmd.name $cmd.version')
+		bldr.writeln('$before $cmd.version')
 	}
 
 	if !is_empty(cmd.author) {
@@ -37,19 +44,29 @@ fn (cmd Subcommand) format(colorizers Colorizers, colorized bool, indent string,
 
 	bldr.writeln('')
 
+	if !is_empty(cmd.usages) {
+		bldr.writeln(colorize(colorized, colorizers.category, 'Usage:'))
+		for usage in cmd.usages {
+			bldr.write_string(indent)
+			bldr.write_string(before)
+			bldr.write_string(' ')
+			bldr.writeln(usage)
+		}
+	}
+
 	if !is_empty(cmd.flags) {
 		bldr.writeln('')
-		cmd.flags.format(mut bldr, colorized, colorizers, indent, help_offset)
+		cmd.flags.format(mut bldr, colorized, colorizers)
 	}
 
 	if !is_empty(cmd.options) {
 		bldr.writeln('')
-		cmd.options.format(mut bldr, colorized, colorizers, indent, help_offset)
+		cmd.options.format(mut bldr, colorized, colorizers)
 	}
 
 	if !is_empty(cmd.subcommands) {
 		bldr.writeln('')
-		cmd.subcommands.format(mut bldr, colorized, colorizers, indent, help_offset)
+		cmd.subcommands.format(mut bldr, colorized, colorizers)
 	}
 
 	if !is_empty(cmd.footer) {
@@ -60,7 +77,7 @@ fn (cmd Subcommand) format(colorizers Colorizers, colorized bool, indent string,
 	return bldr.str()
 }
 
-fn (subcommands []Subcommand) format(mut bldr strings.Builder, colorized bool, colorizers Colorizers, indent string, help_offset int) {
+fn (subcommands []Subcommand) format(mut bldr strings.Builder, colorized bool, colorizers Colorizers) {
 	bldr.writeln(colorize(colorized, colorizers.category, 'Subcommands:'))
 
 	mut max_name_len := 0

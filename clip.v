@@ -4,6 +4,11 @@ import os
 import strings
 import v.vmod
 
+const (
+	help_offset = 2
+	indent      = '    '
+)
+
 // Creates new App
 pub fn new(name string) App {
 	return App{
@@ -14,8 +19,8 @@ pub fn new(name string) App {
 // Creates new cli app with name, version, author and about with values of v.mod file
 //
 // Panics if pseudo variable @VMOD_FILE is not present or incorrect
-pub fn vmod() App {
-	mod := vmod.decode(@VMOD_FILE) or { panic(err.msg) }
+pub fn vmod(mod_file string) App {
+	mod := vmod.decode(mod_file) or { panic(err.msg) }
 	return App{
 		name: mod.name
 		version: mod.version
@@ -27,8 +32,8 @@ pub fn vmod() App {
 // Overrides name, version, author and about with values of v.mod file
 //
 // Panics if pseudo variable @VMOD_FILE is not present or incorrect
-pub fn (app App) vmod() App {
-	mod := vmod.decode(@VMOD_FILE) or { panic(err.msg) }
+pub fn (app App) vmod(mod_file string) App {
+	mod := vmod.decode(mod_file) or { panic(err.msg) }
 	return App{
 		...app
 		name: mod.name
@@ -56,15 +61,40 @@ fn check_help_flag(flags []Flag) []Flag {
 	}], ...flags)
 }
 
-pub fn (a App) help(colorized bool) string {
-	app := App{
-		...a
-		flags: check_help_flag(a.flags)
+fn (a App) help(colorized bool) string {
+	return a.format(colorized)
+}
+
+fn (a App) print(before string) {
+	a.print_help()
+}
+
+pub fn (a App) print_help() {
+	println(a)
+}
+
+fn (app App) parse(args []string) ?Matches {
+	a := App{
+		...app
+		flags: check_help_flag(app.flags)
 	}
-	return app.format(colorized)
+
+	mut matches := Matches{
+		before: app.name
+	}
+	// Leave behind a binary or path what usually passed as before
+	parse(mut matches, a, args[1..]) ?
+
+	if matches.is_empty() {
+		a.print(matches.before)
+		exit(0)
+	}
+
+	return matches
 }
 
 pub struct App {
+	before string
 pub:
 	name        string       [required]
 	version     string
@@ -75,12 +105,7 @@ pub:
 	options     []Opt
 	subcommands []Subcommand
 	footer      string
-	// Binary name used in `Usage: <bin_name> [FLAGS] [OPTIONS] [SUBCOMMAND]` example
-	//
-	// Defaults to executable name or `v.mod` field `name` on call of `app.vmod()`
-	app_name string
-
-	colorizers Colorizers
+	colorizers  Colorizers
 }
 
 pub fn (a App) get_matches() ?Matches {
@@ -112,20 +137,10 @@ fn (a App) format(colorized bool) string {
 
 	bldr.writeln('')
 
-	// vfmt adding dot before constants so it placed there
-	// TODO: When vfmt will be fixed, move this variable to consts
-	help_offset := 2
-	indent := '    '
-	app_name := if is_empty(a.app_name) {
-		os.file_name(os.executable()).split('.')[0]
-	} else {
-		a.app_name
-	}
-
 	bldr.writeln(colorize(colorized, a.colorizers.category, 'Usage:'))
 	if a.usages.len == 0 {
 		bldr.write_string(indent)
-		bldr.write_string(app_name)
+		bldr.write_string(a.name)
 
 		if !is_empty(a.flags) {
 			bldr.write_string(' [FLAGS]')
@@ -143,7 +158,7 @@ fn (a App) format(colorized bool) string {
 	} else {
 		for usage in a.usages {
 			bldr.write_string(indent)
-			bldr.write_string(app_name)
+			bldr.write_string(a.name)
 			bldr.write_string(' ')
 			bldr.writeln(usage)
 		}
@@ -151,17 +166,17 @@ fn (a App) format(colorized bool) string {
 
 	if !is_empty(a.flags) {
 		bldr.writeln('')
-		a.flags.format(mut bldr, colorized, a.colorizers, indent, help_offset)
+		a.flags.format(mut bldr, colorized, a.colorizers)
 	}
 
 	if !is_empty(a.options) {
 		bldr.writeln('')
-		a.options.format(mut bldr, colorized, a.colorizers, indent, help_offset)
+		a.options.format(mut bldr, colorized, a.colorizers)
 	}
 
 	if !is_empty(a.subcommands) {
 		bldr.writeln('')
-		a.subcommands.format(mut bldr, colorized, a.colorizers, indent, help_offset)
+		a.subcommands.format(mut bldr, colorized, a.colorizers)
 	}
 
 	if !is_empty(a.footer) {
@@ -172,22 +187,16 @@ fn (a App) format(colorized bool) string {
 	return bldr.str()
 }
 
-fn (app App) parse(args []string) ?Matches {
-	// Leave behind a binary or path what usually passed as first argument
-	return parse(app, args[1..])
-}
-
 interface Command {
 	flags []Flag
 	options []Opt
 	subcommands []Subcommand
+	print(before string)
 }
 
-fn parse(command Command, arguments []string) ?Matches {
-	mut matches := Matches{}
-
+fn parse(mut matches Matches, command Command, arguments []string) ? {
 	if is_empty(arguments) {
-		return matches
+		return
 	}
 
 	for flag in command.flags {
@@ -219,7 +228,7 @@ fn parse(command Command, arguments []string) ?Matches {
 		return error('not all required options was provided, expected: `${required_opts.join('`, `')}`')
 	}
 
-	return matches
+	return
 }
 
 enum ArgType {
@@ -240,9 +249,13 @@ fn determine_arg(arg string) ?([]string, ArgType) {
 fn parse_arg(command Command, mut matches Matches, mut required_opts []string, arg string) ?bool {
 	parts, arg_type := determine_arg(arg) or { return false }
 
-	if (parts.len > 1
-		&& parse_option(command.options, mut matches, mut required_opts, parts, arg_type))
-		|| parse_flag(command.flags, mut matches, parts[0], arg_type) {
+	if parts[0] == 'help' {
+		command.print(matches.before)
+		exit(0)
+	}
+
+	if parse_flag(command.flags, mut matches, parts[0], arg_type) || (parts.len > 1
+		&& parse_option(command.options, mut matches, mut required_opts, parts, arg_type)) {
 		return true
 	}
 
@@ -296,7 +309,10 @@ fn parse_option(options []Opt, mut matches Matches, mut required_opts []string, 
 fn parse_subcommand(subcommands []Subcommand, mut matches Matches, arg string, rest []string) ?bool {
 	for subcmd in subcommands {
 		if arg in [subcmd.name, subcmd.short] {
-			subcmd_matches := parse(&subcmd, rest[1..]) ?
+			mut subcmd_matches := Matches{
+				before: '$matches.before $subcmd.name'
+			}
+			parse(mut subcmd_matches, &subcmd, rest[1..]) ?
 			matches.matched_subcmd = subcmd.name
 			matches.subcommand = &subcmd_matches
 			return true
