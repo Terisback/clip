@@ -17,7 +17,7 @@ fn test_vmod() {
 }
 
 fn test_app_constructor() {
-	println(App{
+	app := App{
 		name: 'coolap'
 		version: '1.0.0'
 		about: 'Description of the app'
@@ -67,7 +67,8 @@ fn test_app_constructor() {
 			},
 		]
 		footer: 'Some cli app usage examples'
-	})
+	}
+	// println(app)
 }
 
 fn test_parse() ? {
