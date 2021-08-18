@@ -188,29 +188,9 @@ fn (app App) parse(args []string) ?Matches {
 		}
 	}
 
-	arg_loop: for index, arg in arguments {
-		if arg.starts_with('--') {
-			parts := arg.trim_prefix('--').split('=')
-
-			if parts.len > 1 
-			 	&& app.parse_option(mut matches, mut required_opts, parts, .long) {
-				continue arg_loop
-			}
-
-			if app.parse_flag(mut matches, parts[0], .long) {
-				continue arg_loop
-			}
-		} else if arg.starts_with('-') {
-			parts := arg.trim_prefix('-').split('=')
-
-			if parts.len > 1 
-				&& app.parse_option(mut matches, mut required_opts, parts, .short) {
-				continue arg_loop
-			}
-
-			if app.parse_flag(mut matches, parts[0], .short) {
-				continue arg_loop
-			}
+	for index, arg in arguments {
+		if app.parse_arg(mut matches, mut required_opts, arg) {
+			continue
 		}
 
 		for subcmd in app.subcommands {
@@ -235,6 +215,28 @@ fn (app App) parse(args []string) ?Matches {
 enum ArgType {
 	short
 	long
+}
+
+fn (app App) determine_arg(arg string) ([]string, ArgType) {
+	if arg.starts_with('--') {
+		return arg.trim_prefix('--').split('='), ArgType.long
+	} else if arg.starts_with('-') {
+		return arg.trim_prefix('-').split('='), ArgType.short
+	}
+
+	return []string{}, ArgType.long
+}
+
+fn (app App) parse_arg(mut matches Matches, mut required_opts []string, arg string) bool {
+	parts, arg_type := app.determine_arg(arg)
+
+	if parts.len != 0 && ((parts.len > 1 
+		&& app.parse_option(mut matches, mut required_opts, parts, arg_type))
+		|| app.parse_flag(mut matches, parts[0], arg_type)) {
+		return true
+	}
+
+	return false
 }
 
 fn (app App) parse_flag(mut matches Matches, arg string, arg_type ArgType) bool {
