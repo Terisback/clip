@@ -79,9 +79,9 @@ fn test_parse() ? {
 		author: 'Mario Pipelover <mpipelover@example.com>'
 		flags: [
 			Flag{
-				name:'debug'
-				help:'Enable debug'
-			}
+				name: 'debug'
+				help: 'Enable debug'
+			},
 		]
 		options: [
 			Opt{
@@ -90,20 +90,30 @@ fn test_parse() ? {
 				short: 'v'
 				param: 'level'
 				help: 'Choose verbosity level: 0, 1, 2'
-			}
+			},
 		]
 		subcommands: [
 			Subcommand{
-				name: "some"
-			}
+				name: 'some'
+				subcommands: [
+					Subcommand{
+						name: 'fome'
+					},
+				]
+			},
 		]
 	}
 
-	m := app.parse(['clip', '-v=4', '--debug', 'some', 'arguemnt']) ?
+	m := app.parse(['clip', '-v=4', '--debug', 'some', 'fome', 'arguemnt']) ?
 
 	println(m)
 
-	if m.matched_subcmd != '' {
-		println(m.subcommand)
-	}
+	println(m.flag('debug') ?)
+
+	println(m.option('verbose') ?)
+
+	println(m.option('verbose') ?)
+
+	subcmd, matches := m.subcommand() ?
+	println(matches)
 }
