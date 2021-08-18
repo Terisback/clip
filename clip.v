@@ -189,7 +189,7 @@ fn (app App) parse(args []string) ?Matches {
 	}
 
 	for index, arg in arguments {
-		if app.parse_arg(mut matches, mut required_opts, arg) {
+		if app.parse_arg(mut matches, mut required_opts, arg) ? {
 			continue
 		}
 
@@ -217,26 +217,29 @@ enum ArgType {
 	long
 }
 
-fn (app App) determine_arg(arg string) ([]string, ArgType) {
+fn (app App) determine_arg(arg string) ?([]string, ArgType) {
 	if arg.starts_with('--') {
 		return arg.trim_prefix('--').split('='), ArgType.long
 	} else if arg.starts_with('-') {
 		return arg.trim_prefix('-').split('='), ArgType.short
 	}
 
-	return []string{}, ArgType.long
+	return error('')
 }
 
-fn (app App) parse_arg(mut matches Matches, mut required_opts []string, arg string) bool {
-	parts, arg_type := app.determine_arg(arg)
+fn (app App) parse_arg(mut matches Matches, mut required_opts []string, arg string) ?bool {
+	parts, arg_type := app.determine_arg(arg) or {
+		return false
+	}
 
-	if parts.len != 0 && ((parts.len > 1 
+	if (parts.len > 1 
 		&& app.parse_option(mut matches, mut required_opts, parts, arg_type))
-		|| app.parse_flag(mut matches, parts[0], arg_type)) {
+		|| app.parse_flag(mut matches, parts[0], arg_type) {
 		return true
 	}
 
-	return false
+	// TODO: Create error type
+	return error('there is no such argument: `$arg`')
 }
 
 fn (app App) parse_flag(mut matches Matches, arg string, arg_type ArgType) bool {
