@@ -8,7 +8,7 @@ fn test_new() {
 }
 
 fn test_vmod() {
-	app := new('Clap CLI').vmod()
+	app := new('Clap CLI').vmod(@VMOD_FILE)
 	mod := vmod.decode(@VMOD_FILE) or { panic(err.msg) }
 	assert app.name == mod.name
 	assert app.version == mod.version
@@ -116,4 +116,14 @@ fn test_parse() ? {
 
 	subcmd, matches := m.subcommand() ?
 	println(matches)
+}
+
+fn test_string_array_iterator() {
+	mut array := StringArrayIterator{
+		array: ['Hello', 'from', 'other', 'world', '!']
+	}
+
+	for str in array {
+		println('$str, $array.peek(), $array.peek()')
+	}
 }

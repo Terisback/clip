@@ -17,8 +17,6 @@ pub fn new(name string) App {
 }
 
 // Creates new cli app with name, version, author and about with values of v.mod file
-//
-// Panics if pseudo variable @VMOD_FILE is not present or incorrect
 pub fn vmod(mod_file string) App {
 	mod := vmod.decode(mod_file) or { panic(err.msg) }
 	return App{
