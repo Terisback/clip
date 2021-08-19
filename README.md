@@ -5,7 +5,7 @@ CLI Parser inspired by rust [clap](https://clap.rs/)
 ## ⚡ Quickstart
 
 ```vlang
-import remimimimi.clip
+import terisback.clip
 
 app := App{
     name: 'My Tremendously Awesome Program'
