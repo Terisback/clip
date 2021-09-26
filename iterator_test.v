@@ -35,4 +35,6 @@ fn teest_string_array_iterator_take_while() ? {
     assert iterator.take_while(fn(s string) bool {
         return !s.starts_with('-')
     }) == test_array[4..7]
+    assert iterator.peek()? == test_array[7]
+    assert iterator.next()? == test_array[7]
 }
