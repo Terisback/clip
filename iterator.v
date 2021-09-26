@@ -26,6 +26,24 @@ fn (mut i StringArrayIterator) skip(n usize) {
 	i.idx += n
 	i.peek_idx = i.idx + 1
 }
+
+fn (mut i StringArrayIterator) take_while(predicate fn(string) bool) []string {
+	mut taked_arr := []string{}
+
+	if in_bounds(i.idx, i.array) {
+		for elem in i.array[i.idx..] {
+			if predicate(elem) {
+				// TODO: Meh, remove `<<` when there will be .push(elem)
+				taked_arr << elem
+			} else {
+				break
+			}
+		}
+	}
+
+	return taked_arr
+}
+
 [direct_array_access]
 fn get(array []string, index usize) ?string {
 	if in_bounds(index, array) {
